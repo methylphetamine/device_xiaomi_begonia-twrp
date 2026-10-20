@@ -44,6 +44,13 @@ TARGET_BOOTLOADER_BOARD_NAME := begonia
 TARGET_NO_BOOTLOADER := true
 
 # File systems
+# "unified": one recovery image that boots on BOTH partition layouts.
+#   * dynamic  -> system/vendor/product/system_ext/odm live inside `super` and
+#                 are mounted from logical partitions (erofs or ext4)
+#   * physical -> the same mount points are real by-name partitions (ext4/f2fs)
+# The recovery fstab carries both sets; TWRP discards a `logical` entry it
+# cannot prepare, so the physical entries take over automatically on devices
+# without a super partition.
 BOARD_USES_METADATA_PARTITION := true
 BOARD_RECOVERYIMAGE_PARTITION_SIZE := 67108864
 BOARD_SYSTEMIMAGE_PARTITION_TYPE := ext4
@@ -53,6 +60,37 @@ TARGET_USERIMAGES_USE_EXT4 := true
 TARGET_USERIMAGES_USE_F2FS := true
 TARGET_COPY_OUT_VENDOR := vendor
 TARGET_USES_MKE2FS := true
+
+# Dynamic partitions: per-partition fs type + copy-out for the logical set
+SSI_PARTITIONS := product system system_ext
+TREBLE_PARTITIONS := odm vendor
+ALL_PARTITIONS := $(SSI_PARTITIONS) $(TREBLE_PARTITIONS)
+
+$(foreach p, $(call to-upper, $(ALL_PARTITIONS)), \
+    $(eval BOARD_$(p)IMAGE_FILE_SYSTEM_TYPE := ext4) \
+    $(eval TARGET_COPY_OUT_$(p) := $(call to-lower, $(p))))
+
+# Reserved inodes/sizes keep the physical (non-dynamic) images buildable too
+$(foreach p, $(call to-upper, $(SSI_PARTITIONS)), \
+    $(eval BOARD_$(p)IMAGE_EXTFS_INODE_COUNT := -1))
+$(foreach p, $(call to-upper, $(TREBLE_PARTITIONS)), \
+    $(eval BOARD_$(p)IMAGE_EXTFS_INODE_COUNT := 4096))
+
+$(foreach p, $(call to-upper, $(SSI_PARTITIONS)), \
+    $(eval BOARD_$(p)IMAGE_PARTITION_RESERVED_SIZE := 83886080)) # 80 MB
+$(foreach p, $(call to-upper, $(TREBLE_PARTITIONS)), \
+    $(eval BOARD_$(p)IMAGE_PARTITION_RESERVED_SIZE := 41943040)) # 40 MB
+
+# Retrofitted A-only super: begonia has no dedicated super partition, so `super`
+# is composed of the system + vendor physical devices.
+BOARD_SUPER_PARTITION_BLOCK_DEVICES := vendor system
+BOARD_SUPER_PARTITION_METADATA_DEVICE := system
+BOARD_SUPER_PARTITION_VENDOR_DEVICE_SIZE := 1610612736
+BOARD_SUPER_PARTITION_SYSTEM_DEVICE_SIZE := 3758096384
+BOARD_SUPER_PARTITION_SIZE := $(shell expr $(BOARD_SUPER_PARTITION_VENDOR_DEVICE_SIZE) + $(BOARD_SUPER_PARTITION_SYSTEM_DEVICE_SIZE) )
+BOARD_SUPER_PARTITION_GROUPS := xiaomi_dynamic_partitions
+BOARD_XIAOMI_DYNAMIC_PARTITIONS_SIZE := $(shell expr $(BOARD_SUPER_PARTITION_SIZE) - 4194304 )
+BOARD_XIAOMI_DYNAMIC_PARTITIONS_PARTITION_LIST := odm product system system_ext vendor
 
 # Kernel
 BOARD_KERNEL_CMDLINE := bootopt=64S3,32N2,64N2 androidboot.selinux=permissive androidboot.usbconfigfs=true androidboot.init_fatal_reboot_target=bootloader

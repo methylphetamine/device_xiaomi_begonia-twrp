@@ -9,6 +9,12 @@
 PRODUCT_SOONG_NAMESPACES += \
     $(LOCAL_PATH)
 
+# Unified partitions: enable the dynamic (super/logical) path alongside the
+# legacy physical layout. This only drives image building - which layout is
+# actually mounted is decided at runtime by the fstab in
+# recovery/root/system/etc/recovery.fstab.
+PRODUCT_USE_DYNAMIC_PARTITIONS := true
+
 # API
 PRODUCT_SHIPPING_API_LEVEL := 29
 
@@ -29,3 +35,7 @@ TW_RECOVERY_ADDITIONAL_RELINK_LIBRARY_FILES += \
 
 PRODUCT_PACKAGES += \
     libshim_beanpod
+
+# fastbootd is required to flash/erase logical partitions on dynamic devices
+PRODUCT_PACKAGES += \
+    fastbootd

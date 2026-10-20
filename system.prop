@@ -8,3 +8,5 @@ ro.mtk_tee_gp_support=1
 ro.mtk_microtrust_tee_support=1
 ro.product.device=begonia
 fbe.metadata.wrappedkey=true
+# fastbootd - required to flash/erase logical (dynamic) partitions
+ro.fastbootd.available=true

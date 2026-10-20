@@ -5,9 +5,31 @@
 # TODO: Add 'check' as fs_mgr_flags with data partition.
 # Currently we dont have e2fsck compiled. So fs check would failed.
 
+# "unified" branch: this single fstab serves BOTH partition layouts.
+#   * dynamic  -> system/vendor/product/system_ext/odm live inside `super`, so
+#                 the `logical` entries below are used. TWRP discards any
+#                 `logical` entry it cannot prepare (Prepare_Super_Volume
+#                 failure), which is what makes these a no-op on devices with
+#                 no super partition.
+#   * physical -> the by-name entries below are the only ones left in that case.
+# `auto` lets TWRP/libblkid mount whatever the ROM actually shipped (ext4, f2fs
+# or erofs) instead of hard-coding one filesystem.
+# /data keeps an explicit ext4 + f2fs pair either way.
+
 #<src>                                           <mnt_point>           <type>   <mnt_flags and options>                                         <fs_mgr_flags>
-/dev/block/platform/bootdevice/by-name/system    /system               ext4     ro                                                              wait,avb=vbmeta,first_stage_mount,avb_keys=/avb/q-gsi.avbpubkey:/avb/r-gsi.avbpubkey:/avb/s-gsi.avbpubkey
-/dev/block/platform/bootdevice/by-name/vendor    /vendor               ext4     ro                                                              wait,avb,first_stage_mount
+
+# --- dynamic layout: logical partitions inside super ---
+system                                          /system               auto     ro                                                              wait,logical,avb=vbmeta,first_stage_mount,avb_keys=/avb/q-gsi.avbpubkey:/avb/r-gsi.avbpubkey:/avb/s-gsi.avbpubkey
+system_ext                                      /system_ext           auto     ro                                                              wait,logical,first_stage_mount
+product                                         /product              auto     ro                                                              wait,logical,first_stage_mount
+vendor                                          /vendor               auto     ro                                                              wait,logical,avb=vbmeta,first_stage_mount
+odm                                             /odm                  auto     ro                                                              wait,logical,first_stage_mount
+
+# --- non-dynamic layout: physical by-name partitions ---
+/dev/block/platform/bootdevice/by-name/system    /system               auto     ro                                                              wait,avb=vbmeta,first_stage_mount,avb_keys=/avb/q-gsi.avbpubkey:/avb/r-gsi.avbpubkey:/avb/s-gsi.avbpubkey
+/dev/block/platform/bootdevice/by-name/vendor    /vendor               auto     ro                                                              wait,avb,first_stage_mount
+
+# --- common to both layouts ---
 /dev/block/platform/bootdevice/by-name/misc      /misc                 emmc     defaults                                                        defaults
 /dev/block/platform/bootdevice/by-name/userdata   /data       ext4     noatime,nosuid,nodev,noauto_da_alloc,errors=panic,inlinecrypt wait,check,formattable,quota,latemount,resize,reservedsize=128m,fileencryption=aes-256-xts:aes-256-cts:v2,keydirectory=/metadata/vold/metadata_encryption
 /dev/block/platform/bootdevice/by-name/userdata   /data       f2fs     noatime,nosuid,nodev,discard,flush_merge,reserve_root=134217,resgid=1065,alloc_mode=reuse,fsync_mode=nobarrier,inlinecrypt wait,check,formattable,quota,latemount,reservedsize=128m,fileencryption=aes-256-xts:aes-256-cts:v2,keydirectory=/metadata/vold/metadata_encryption
