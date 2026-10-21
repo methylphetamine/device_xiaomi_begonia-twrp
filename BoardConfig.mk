@@ -139,6 +139,11 @@ TW_INCLUDE_FBE_METADATA_DECRYPT := true
 # FBEv2 (metadata-encrypted userdata used by current MIUI/HyperOS/AOSP ROMs)
 TW_USE_FSCRYPT_POLICY := 2
 
+# EROFS
+# The prebuilt recovery kernel has CONFIG_EROFS_FS=y / CONFIG_EROFS_FS_ZIP=y,
+# TWRP's libblkid probes erofs superblocks, and recovery.fstab lists explicit
+# erofs + ext4 pairs for every read-only system/vendor partition. EROFS is
+# read-only, so no mkfs/fsck userspace tools are needed in recovery.
 # Recovery
 TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
 TARGET_RECOVERY_DEVICE_DIRS += $(DEVICE_PATH)

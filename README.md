@@ -80,19 +80,21 @@ mka recoveryimage -j$(nproc --all)
 
 One recovery that boots on both a stock (non-dynamic) begonia and a
 repartitioned (dynamic / `super`) one, mounting whichever filesystem the ROM
-shipped (ext4, f2fs or erofs).
+shipped (erofs or ext4; /data is ext4/f2fs).
 
 - `recovery/root/system/etc/recovery.fstab` carries two sets of entries:
   - `logical` entries for `system`, `system_ext`, `product`, `vendor`, `odm`
-    (dynamic layout). TWRP discards a `logical` entry when
-    `Prepare_Super_Volume()` fails, i.e. when the device has no `super`
-    partition, so these are inert on non-dynamic devices.
+    (dynamic layout). Each is an explicit `erofs` + `ext4` pair. TWRP discards
+    a `logical` entry when `Prepare_Super_Volume()` fails, i.e. when the device
+    has no `super` partition, so these are inert on non-dynamic devices.
   - physical `by-name` entries for `system` and `vendor` (non-dynamic layout) -
-    the only ones left in the list once the logical entries are dropped.
+    also explicit `erofs` + `ext4` pairs, and the only ones left in the list
+    once the logical entries are dropped.
   - entries are ordered logical-first because `Find_Partition_By_Path()`
     returns the first match.
-  - the filesystem type is `auto`, letting TWRP/libblkid mount ext4, f2fs or
-    erofs as shipped. `/data` keeps an explicit `ext4` + `f2fs` pair.
+  - TWRP probes the actual filesystem with libblkid; the matching entry's
+    flags are selected automatically. `/data` keeps an explicit `ext4` +
+    `f2fs` pair.
 - `BoardConfig.mk` keeps the physical image flags and adds the retrofitted
   A-only super configuration (`BOARD_SUPER_PARTITION_*`,
   `BOARD_XIAOMI_DYNAMIC_PARTITIONS_*`).
@@ -106,6 +108,8 @@ shipped (ext4, f2fs or erofs).
 
 Build it by pointing `local_manifests/begonia.xml` at `revision="unified"`.
 
-Device validation still required: mounting erofs needs kernel erofs support,
-the dual-entry fstab depends on TWRP discarding unprepared `logical` entries,
-and decryption must be checked against the installed ROM's FBE version.
+EROFS support is built in: the prebuilt recovery kernel has
+`CONFIG_EROFS_FS=y` / `CONFIG_EROFS_FS_ZIP=y`, libblkid probes erofs, and the
+fstab carries explicit `erofs` + `ext4` pairs. The dual-entry fstab depends on
+TWRP discarding unprepared `logical` entries, and decryption must be checked
+against the installed ROM's FBE version.
