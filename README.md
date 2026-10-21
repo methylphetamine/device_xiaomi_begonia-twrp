@@ -96,11 +96,16 @@ shipped (ext4, f2fs or erofs).
 - `BoardConfig.mk` keeps the physical image flags and adds the retrofitted
   A-only super configuration (`BOARD_SUPER_PARTITION_*`,
   `BOARD_XIAOMI_DYNAMIC_PARTITIONS_*`).
-- `device.mk` adds `PRODUCT_USE_DYNAMIC_PARTITIONS := true` and `fastbootd`.
+- `device.mk` adds `PRODUCT_USE_DYNAMIC_PARTITIONS := true`, `fastbootd`
+  and the health HAL used by decryption.
+- FBEv2 decryption: `TW_USE_FSCRYPT_POLICY := 2`, the FBEv2 data fstab
+  flags (`inlinecrypt_optimized`, `fsverity`, `checkpoint=fs` on f2fs),
+  and no early `vold` start in `init.recovery.mt6785.rc`.
 - `system.prop` adds `ro.fastbootd.available=true`.
-- Product naming is unchanged; `pb_begonia.mk` is kept for PBRP builds.
+- Product branding is `Randi` / `Nut 8 Pro`; `pb_begonia.mk` is kept for PBRP builds.
 
 Build it by pointing `local_manifests/begonia.xml` at `revision="unified"`.
 
-Not yet tested on a device: mounting erofs requires kernel erofs support, and
-the dual-entry fstab depends on TWRP discarding unprepared `logical` entries.
+Device validation still required: mounting erofs needs kernel erofs support,
+the dual-entry fstab depends on TWRP discarding unprepared `logical` entries,
+and decryption must be checked against the installed ROM's FBE version.

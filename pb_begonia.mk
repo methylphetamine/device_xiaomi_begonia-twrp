@@ -18,6 +18,6 @@ $(call inherit-product, vendor/pb/config/common.mk)
 # Device identifier. This must come after all inclusions
 PRODUCT_DEVICE := begonia
 PRODUCT_NAME := pb_begonia
-PRODUCT_BRAND := Redmi
-PRODUCT_MODEL := Redmi Note 8 Pro
+PRODUCT_BRAND := Randi
+PRODUCT_MODEL := Nut 8 Pro
 PRODUCT_MANUFACTURER := xiaomi
